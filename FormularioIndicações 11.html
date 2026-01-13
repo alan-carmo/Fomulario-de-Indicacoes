@@ -875,8 +875,9 @@
                     <p style="margin-top: 8px;">Se selecionado <strong>"SIM"</strong> e o campo "R&S fez Avaliação?" estiver com <strong>"NÃO"</strong>:</p>
                     <ul style="margin-top: 8px;">
                         <li>❌ Será exibido um alerta indicando que esse candidato não pode ser movimentado</li>
-                        <li>❌ Os arquivos PDF e CSV/Excel/Libre Office Calc NÃO poderão ser gerados</li>
+                        <li>❌ Os arquivos PDF e CSV/Excel/Libre Office Calc <U>NÃO</U> poderão ser gerados</li>
                         <li>✅ Retire o candidato da lista e solicite a Avaliação Comportamental à área de Recrutamento e Seleção (R&S)</li>
+                        <li>⚠️ Se estiver selecionado "N/A" os outros campos estarão livres para preenchimento</li>
                     </ul>
                 </div>
                 
@@ -885,8 +886,8 @@
                     <p style="margin-top: 8px;">Se selecionado <strong>"SIM"</strong> e o campo "Possui Carta?" estiver com <strong>"NÃO"</strong>:</p>
                     <ul style="margin-top: 8px;">
                         <li>❌ Será exibido um alerta indicando que esse candidato não pode ser movimentado sem carta</li>
-                        <li>❌ Os arquivos PDF e CSV/Excel/Libre Office Calc NÃO poderão ser gerados</li>
-                         <li>✅ Contacte a Gerência do Departamento Pessoal para elaborar a carta e coletar as assinaturas</li>
+                        <li>❌ Os arquivos PDF e CSV/Excel/Libre Office Calc <U>NÃO</U> poderão ser gerados</li>
+                         <li>✅ Contacte a Gerência do Departamento Pessoal para elaborar a carta de treinamento e coletar as assinaturas</li>
                     </ul>
                 </div>
 
@@ -895,7 +896,7 @@
                     <p style="margin-top: 8px;">Se houver <strong>"matrícula"</strong> repetida na tabela:</p>
                     <ul style="margin-top: 8px;">
                         <li>❌ Será exibido um alerta indicando quais matrículas aparecem repetidas</li>
-                        <li>❌ Os arquivos PDF e CSV/Excel/Libre Office Calc NÃO poderão ser gerados</li>
+                        <li>❌ Os arquivos PDF e CSV/Excel/Libre Office Calc <U>NÃO</U> poderão ser gerados</li>
                         <li>✅ Retire e/ou altere a matrícula informada</li>
                     </ul>
                 </div>
@@ -952,7 +953,7 @@
                          <li>Em Treinamento? = <strong>SIM</strong></li>
                         <li>E Possui Carta? = <strong>NÃO</strong></li>
                     </ul>
-                     <p style="margin-top: 8px;"><strong>Ação necessária:</strong> Regularize a carta junto à Gerência do DP ou retire o candidato da lista.</p>
+                     <p style="margin-top: 8px;"><strong>Ação necessária:</strong> Retire esse candidato da lista e regularize a carta de treinamento junto à Gerência do DP.</p>
                 </div>
 
 
@@ -1222,7 +1223,7 @@
             const cargoLideranca = row.querySelector('[data-field="cargoLideranca"]').value;
             const avaliacaoComport = row.querySelector('[data-field="avaliacaoComportamental"]');
 
-            if (cargoLideranca === 'SIM' && avaliacaoComport.value === 'NÃO') {
+            if (cargoLideranca === 'SIM' && (avaliacaoComport.value === 'NÃO')) {
                 avaliacaoComport.classList.add('error');
                 avaliacaoComport.title = 'BLOQUEADO: Avaliação Comportamental é obrigatória para cargos de liderança!';
                 row.classList.add('row-error');
@@ -1270,7 +1271,7 @@
             const emTreinamento = row.querySelector('[data-field="emTreinamento"]').value;
             const possuiCarta = row.querySelector('[data-field="possuiCarta"]');
 
-            if (emTreinamento === 'SIM' && possuiCarta.value === 'NÃO') {
+            if (emTreinamento === 'SIM' && (possuiCarta.value === 'NÃO' || possuiCarta.value === 'N/A')) {
                 possuiCarta.classList.add('error'); // Mudado de warning para error
                 possuiCarta.classList.remove('warning');
                 possuiCarta.title = 'BLOQUEADO: Empregado em treinamento sem carta. Contate a Gerência do Departamento Pessoal!';
@@ -1376,18 +1377,22 @@
         // Verificar Bloqueio de Liderança
         function checkLeadershipBlock() {
             const rows = document.querySelectorAll('#tableBody tr');
-            for (const row of rows) {
+            const blockedList = []; // Array para guardar os erros encontrados
+
+            rows.forEach((row, index) => {
                 const matricula = row.querySelector('[data-field="matricula"]').value.trim();
-                if (!matricula) continue;
+                if (!matricula) return; // Pula linhas vazias
 
                 const cargoLideranca = row.querySelector('[data-field="cargoLideranca"]').value;
                 const avaliacaoComport = row.querySelector('[data-field="avaliacaoComportamental"]').value;
-                
-                if (cargoLideranca === 'SIM' && avaliacaoComport === 'NÃO') {
-                    return true;
+                const nome = row.querySelector('[data-field="nome"]').value; // Captura o nome para o aviso
+
+                if (cargoLideranca === 'SIM' && (avaliacaoComport === 'NÃO')) {
+                    // Adiciona a identificação da linha e nome na lista
+                    blockedList.push(`• Linha ${index + 1}: ${nome}`);
                 }
-            }
-            return false;
+            });
+            return blockedList; // Retorna a lista (se estiver vazia, significa que não há erros)
         }
 
         // Verificar Bloqueio de Treinamento
@@ -1403,14 +1408,14 @@
                 const possuiCarta = row.querySelector('[data-field="possuiCarta"]').value;
                 const nome = row.querySelector('[data-field="nome"]').value; // Captura o nome para o aviso
 
-                if (emTreinamento === 'SIM' && possuiCarta === 'NÃO') {
-                // Adiciona a identificação da linha e nome na lista
-                blockedList.push(`• Linha ${index + 1}: ${nome}`);
-            }
-        });
+                if (emTreinamento === 'SIM' && (possuiCarta === 'NÃO' || possuiCarta === 'N/A')) {
+                    // Adiciona a identificação da linha e nome na lista
+                    blockedList.push(`• Linha ${index + 1}: ${nome}`);
+                }
+            });
 
-    return blockedList; // Retorna a lista (se estiver vazia, significa que não há erros)
-}
+            return blockedList; // Retorna a lista (se estiver vazia, significa que não há erros)
+        }
 
         // NOVO: Validar se há avisos (Removida lógica antiga de treinamento pois virou bloqueio)
         function getWarningRows() {
@@ -1655,8 +1660,13 @@
             // ============================================
             
             // 1. Bloqueio de Liderança
-            if (checkLeadershipBlock()) {
-                alert('❌ BLOQUEADO: Existem candidatos com Cargo de Liderança = SIM e Avaliação Comportamental = NÃO.\n\nEsses candidatos não podem ser movimentados sem a "Avaliação Comportamental" ter sido realizada por R & S.\n\nPor favor, retire-o(s) da lista a ser enviada para a área de Remuneração e Performance');
+            const leadershipErrors = checkLeadershipBlock(); // Pega a lista
+            if (leadershipErrors.length > 0) { // Verifica se tem itens na lista
+                const listaNomes = leadershipErrors.join('\n');
+                alert('❌ BLOQUEADO: Existem candidatos com Cargo de Liderança = SIM e Avaliação Comportamental = NÃO.\n\n' +
+                    'CANDIDATOS COM PENDÊNCIA:\n' + listaNomes + '\n\n' +
+                    'Esses candidatos não podem ser movimentados sem a "Avaliação Comportamental" ter sido realizada por R & S.\n\n' +
+                    'Por favor, retire-o(s) da lista a ser enviada para a área de Remuneração e Performance');
                 return;
             }
 
@@ -1665,8 +1675,7 @@
             if (trainingErrors.length > 0) {
                 // Junta a lista de nomes com quebras de linha
                 const listaNomes = trainingErrors.join('\n');
-    
-                alert('❌ BLOQUEADO: Existem candidatos que estão com Treinamento = SIM e Possui Carta = NÃO.\n\n' +
+                alert('❌ BLOQUEADO: Existem candidatos que estão com Treinamento = SIM e Possui Carta = NÃO ou N/A.\n\n' +
                     'CANDIDATOS COM PENDÊNCIA:\n' + listaNomes + '\n\n' +
                     'Esse(s) candidato(s) não pode(m) ser movimentado(s) sem ter a Carta de Treinamento.\n\n' +
                     'Por favor, retire-o(s) da lista a ser enviada e contacte a Gerência do Departamento Pessoal para solicitar a elaboração da carta de treinamento e coleta das assinaturas, considerando o tempo de formação de até 90 dias, antes da solicitação de movimentação do empregado.');
@@ -1684,7 +1693,7 @@
             const empresaText = empresaSelect.options[empresaSelect.selectedIndex].text;
             
             const headers = [
-                'Matrícula', 'Nome Completo', 'Setor de Origem', 'Cargo Atual', 'Cód. Setor Destino',
+                'Matrícula', 'Nome Completo', 'Setor Atual', 'Cargo Atual', 'Cód. Setor Destino',
                 'Setor de Destino', 'Cargo Proposto', 'Cargo de Liderança?', 'R&S fez Avaliação?',
                 'Data Avaliação Comportamental', 'Em Treinamento?', 'Possui Carta?',
                 'Data Início Treinamento', 'É Substituição?', 'Matrícula Substituído', 'Nome Substituído',
@@ -1779,8 +1788,13 @@
             // ============================================
             
             // 1. Bloqueio de Liderança
-            if (checkLeadershipBlock()) {
-                alert('❌ BLOQUEADO: Existem candidatos com Cargo de Liderança = SIM e Avaliação Comportamental = NÃO.\n\nEsses candidatos não podem ser movimentados sem a "Avaliação Comportamental" ter sido realizada por R & S.\n\nPor favor, retire-o(s) da lista a ser enviada para a área de Remuneração e Performance');
+            const leadershipErrors = checkLeadershipBlock(); // Pega a lista de erros
+            if (leadershipErrors.length > 0) { // Verifica se tem itens na lista
+                const listaNomes = leadershipErrors.join('\n');
+                alert('❌ BLOQUEADO: Existem candidatos com Cargo de Liderança = SIM e Avaliação Comportamental = NÃO.\n\n' +
+                    'CANDIDATOS COM PENDÊNCIA:\n' + listaNomes + '\n\n' +
+                    'Esses candidatos não podem ser movimentados sem a "Avaliação Comportamental" ter sido realizada por R & S.\n\n' +
+                    'Por favor, retire-o(s) da lista a ser enviada para a área de Remuneração e Performance');
                 return;
             }
 
@@ -1789,8 +1803,7 @@
             if (trainingErrors.length > 0) {
                 // Junta a lista de nomes com quebras de linha
                 const listaNomes = trainingErrors.join('\n');
-    
-                alert('❌ BLOQUEADO: Existem candidatos que estão com Treinamento = SIM e Possui Carta = NÃO.\n\n' +
+                alert('❌ BLOQUEADO: Existem candidatos que estão com Treinamento = SIM e Possui Carta = NÃO ou N/A.\n\n' +
                     'CANDIDATOS COM PENDÊNCIA:\n' + listaNomes + '\n\n' +
                     'Esse(s) candidato(s) não pode(m) ser movimentado(s) sem ter a Carta de Treinamento.\n\n' +
                     'Por favor, retire-o(s) da lista a ser enviada e contacte a Gerência do Departamento Pessoal para solicitar a elaboração da carta de treinamento e coleta das assinaturas, considerando o tempo de formação de até 90 dias, antes da solicitação de movimentação do empregado.');
@@ -1879,7 +1892,7 @@
                         <tr style="background: #1e3a5f; color: white;">
                             <th style="border: 1px solid #ddd; padding: 4px; text-align: left; width: 46px;">Mat.</th>
                             <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Nome</th>
-                            <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Setor Orig.</th>
+                            <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Setor Atual</th>
                             <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Cargo Atual</th>
                             <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Cód. Setor Dest.</th>
                             <th style="border: 1px solid #ddd; padding: 4px; text-align: left;">Setor Dest.</th>
